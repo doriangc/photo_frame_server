@@ -2,6 +2,7 @@ import fs, { promises as fsProm } from 'fs';
 import net from 'net';
 import _ from 'lodash';
 import { getNewImage } from './images';
+import { dateDiffInMs } from './tools';
 
 const PORT = 9383;
 const HOST = "0.0.0.0";
@@ -16,6 +17,16 @@ const onClientConnected = (sock: any) => {
         if (data.includes("get_picture")) {
             let currentImageBuffer = await getNewImage();
             sock.write(currentImageBuffer);
+        } else if (data.includes("get_sleep_duration")) {
+            const now = new Date();
+            
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate()+1);
+            tomorrow.setHours(3, 0, 0, 0);
+
+            const sleep = dateDiffInMs(tomorrow, now);
+
+            sock.write(sleep);
         } else {
             sock.write("????");
         }
@@ -33,12 +44,9 @@ const onClientConnected = (sock: any) => {
 (async () => {
     console.log("Starting photo frame server...");
 
-    // const server = net.createServer(onClientConnected);
+    const server = net.createServer(onClientConnected);
 
-    await -getNewImage();
-
-
-    // server.listen(PORT, HOST, function () {
-    //     console.log(`Server listening on ${server.address()}`);
-    // });
+    server.listen(PORT, HOST, function () {
+        console.log(`Server listening on ${server.address()}`);
+    });
 })();
