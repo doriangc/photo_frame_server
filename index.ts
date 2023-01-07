@@ -3,6 +3,7 @@ import net from 'net';
 import _ from 'lodash';
 import { getNewImage } from './images';
 import { dateDiffInMs } from './tools';
+import { Int64BE } from "int64-buffer";
 
 const PORT = 9383;
 const HOST = "0.0.0.0";
@@ -24,9 +25,21 @@ const onClientConnected = (sock: any) => {
             tomorrow.setDate(tomorrow.getDate()+1);
             tomorrow.setHours(3, 0, 0, 0);
 
-            const sleep = dateDiffInMs(tomorrow, now);
+            console.log(tomorrow, "--", now);
 
-            sock.write(sleep);
+            // Sleep in nanoseconds
+            let sleep = dateDiffInMs(tomorrow, now);
+            console.log(`Sleep for ${sleep} milliseconds`);
+
+            // Force to 64 bits
+            var sleepNs = new Int64BE(sleep * 1000 * 1000);
+            console.log(`Sleep for ${sleepNs.toString()} nanoseconds`);
+
+            const outData = sleepNs.toBuffer();
+
+            console.log(outData);
+
+            sock.write(outData);
         } else {
             sock.write("????");
         }
