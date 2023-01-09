@@ -34,10 +34,12 @@ if __name__ == "__main__":
         exit(-1)
 
     try:
-        for image in sys.argv[2:]:
+        for image in sys.argv[1:]:
             env_start_date = os.getenv('START_DATE')
             env_end_date = os.getenv('END_DATE')
-            priority = os.getenv('END_DATE')
+            priority = os.getenv('PRIORITY')
+
+            print(env_start_date, env_end_date, priority)
 
             startMonth, startDay = parse_date(env_start_date if env_start_date else input("Start day (MMM-DD)? "))
             endMonth, endDay = parse_date(env_end_date if env_end_date else input("End day (MMM-DD)? "))
