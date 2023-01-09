@@ -29,51 +29,56 @@ def parse_date(string):
 if __name__ == "__main__":
     args = 1;
     
-    if len(sys.argv) != 1 + args:
+    if len(sys.argv) < 1 + args:
         print("Usage: add_image.py [inputFile]")
         exit(-1)
-    
+
     try:
-        startMonth, startDay = parse_date(input("Start day (MMM-DD)? "))
-        endMonth, endDay = parse_date(input("End day (MMM-DD)? "))
-        try:
-            priority = int(input("Priority (>0)? "))
-        except ValueError:
-            raise Exception("Invalid Priority!")
+        for image in sys.argv[2:]:
+            env_start_date = os.getenv('START_DATE')
+            env_end_date = os.getenv('END_DATE')
+            priority = os.getenv('END_DATE')
 
-        outFileName = hex(round(time.time()*1000))[2:]
+            startMonth, startDay = parse_date(env_start_date if env_start_date else input("Start day (MMM-DD)? "))
+            endMonth, endDay = parse_date(env_end_date if env_end_date else input("End day (MMM-DD)? "))
+            try:
+                priority = int(priority if priority else input("Priority (>0)? "))
+            except ValueError:
+                raise Exception("Invalid Priority!")
 
-        outPng = os.path.join(os.path.dirname(__file__), "images", f"{outFileName}.png")
-        outRaw = os.path.join(os.path.dirname(__file__), "images", f"{outFileName}.raw")
+            outFileName = hex(round(time.time()*1000))[2:]
 
-        print(f"Outputting to {outRaw}")
+            outPng = os.path.join(os.path.dirname(__file__), "images", f"{outFileName}.png")
+            outRaw = os.path.join(os.path.dirname(__file__), "images", f"{outFileName}.raw")
 
-        converter.convert(sys.argv[1], outPng, outRaw)
+            print(f"Outputting to {outRaw}")
 
-        manifestEntry = {
-            "raw": outRaw,
-            "png": outPng,
-            "date_range": {
-                "start_month": startMonth,
-                "start_day": startDay,
-                "end_month": endMonth,
-                "end_day": endDay
-            },
-            "show": True,
-            "priority": priority,
-            "last_accessed": {
-                "year": 1970,
-                "month": 1,
-                "day": 1
+            converter.convert(image, outPng, outRaw)
+
+            manifestEntry = {
+                "raw": outRaw,
+                "png": outPng,
+                "date_range": {
+                    "start_month": startMonth,
+                    "start_day": startDay,
+                    "end_month": endMonth,
+                    "end_day": endDay
+                },
+                "show": True,
+                "priority": priority,
+                "last_accessed": {
+                    "year": 1970,
+                    "month": 1,
+                    "day": 1
+                }
             }
-        }
 
-        with open(f"{os.path.dirname(__file__)}/images/manifest.json", "r+") as f:
-            data = json.load(f)
-            data["images"].append(manifestEntry)
-            f.seek(0)
-            f.write(json.dumps(data))
-            f.truncate()
+            with open(f"{os.path.dirname(__file__)}/images/manifest.json", "r+") as f:
+                data = json.load(f)
+                data["images"].append(manifestEntry)
+                f.seek(0)
+                f.write(json.dumps(data))
+                f.truncate()
 
     except Exception as e:
         print(e)
