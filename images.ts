@@ -1,9 +1,7 @@
-import { promises as fsProm } from 'fs';
 import _ from 'lodash';
-import { dateDiffInDays } from './tools';
+import { promises as fsProm } from 'fs';
 
-type ImageData = {
-    images: {
+type Image = {
         raw: string,
         png: string,
         date_range: {
@@ -14,19 +12,19 @@ type ImageData = {
         },
         show: boolean,
         priority: number,
-        last_accessed: {
-            year: number,
-            month: number,
-            day: number
-        }
-    }[]
+        recently_accessed: boolean,
+    };
+
+type ImageData = {
+    images: Image[]
 };
 
 
 const EXPECTED_BUFFER_SIZE = 600 * 448 / 2;
 
 const getNewImage = async (): Promise<Buffer> => {
-    let candidates: string[] = [];
+    let candidates: Image[] = [];
+    let tooRecent: Image[] = [];
     let priority = -1;
 
     const manifest = await fsProm.readFile('./images/manifest.json', 'utf8');
@@ -34,6 +32,7 @@ const getNewImage = async (): Promise<Buffer> => {
     // parse JSON string to JSON object
     const image_data: ImageData = JSON.parse(manifest);
     const today = new Date();
+
 
     for (const image of image_data.images) {
         if (!image.show) continue;
@@ -51,14 +50,10 @@ const getNewImage = async (): Promise<Buffer> => {
         // console.log(todayDayId, startDayId, endDayId, spansNewYear);
 
 
-        const lastAccessed = new Date(image.last_accessed.year, image.last_accessed.month, image.last_accessed.day);
-        const diffDays = dateDiffInDays(today, lastAccessed);
+        // const lastAccessed = new Date(image.last_accessed.year, image.last_accessed.month, image.last_accessed.day);
+        // const diffDays = dateDiffInDays(today, lastAccessed);
 
         // If this photo was shown in the last three months, skip.
-        if (diffDays < 90) {
-            console.log(`Skipping because photo shown only ${diffDays} days ago`)
-            continue;
-        }
 
         // If today out of range for this picure, then skip
         if ((todayDayId < startDayId || todayDayId > endDayId) && !spansNewYear) {
@@ -73,7 +68,13 @@ const getNewImage = async (): Promise<Buffer> => {
 
         // If lower than currently established priority, then skip.
         if (image.priority < priority) {
-            console.log("Skipping because lower than priority")
+            console.log("Skipping because lower than priority");
+            continue;
+        }
+
+        if (image.recently_accessed) {
+            tooRecent.push(image);
+            console.log("Skipping because photo shown recently");
             continue;
         }
 
@@ -84,12 +85,33 @@ const getNewImage = async (): Promise<Buffer> => {
             priority = image.priority;
         }
 
-        candidates.push(image.raw);
+
+        candidates.push(image);
     }
 
-    const candidateFile = _.sample(candidates) ?? "images/default.raw";
-    console.log(`Chose ${candidateFile}`)
+    const candidate = _.sample(candidates);
 
+    if (!candidate) {
+        console.log("Resetting recent images...");
+        for (const image of tooRecent) {
+            image.recently_accessed = false;
+        }
+
+        const manifestFile = await fsProm.open('./images/manifest.json', 'w');
+        manifestFile.writeFile(JSON.stringify(image_data));
+        manifestFile.close();
+
+        return getNewImage();
+    }
+    
+    candidate.recently_accessed = true;
+    const manifestFile = await fsProm.open('./images/manifest.json', 'w');
+    manifestFile.writeFile(JSON.stringify(image_data));
+    manifestFile.close();
+
+    const candidateFile = candidate.raw;
+
+    console.log(`Chose ${candidateFile}`)
 
     const file = await fsProm.open(candidateFile, 'r');
     const buffer = Buffer.alloc(EXPECTED_BUFFER_SIZE);

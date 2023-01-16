@@ -68,11 +68,7 @@ if __name__ == "__main__":
                 },
                 "show": True,
                 "priority": priority,
-                "last_accessed": {
-                    "year": 1970,
-                    "month": 1,
-                    "day": 1
-                }
+                "recently_accessed": False
             }
 
             with open(f"{os.path.dirname(__file__)}/images/manifest.json", "r+") as f:

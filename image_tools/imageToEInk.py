@@ -7,12 +7,15 @@ import os
 
 
 def convert(inFile, outFilePng, outFileRaw):
+    tempFilePng = outFilePng + "t";
     subprocess.check_output(["make", "-C", os.path.dirname(__file__)])
+    subprocess.check_output(["cp", inFile, tempFilePng])
     try:
-        width, height = list(map(float, str(subprocess.check_output(["identify", inFile])).split(" ")[2].split("x")))
+        width, height = list(map(float, str(subprocess.check_output(["identify", tempFilePng])).split(" ")[2].split("x")))
     except subprocess.CalledProcessError as e:
         raise Exception("Error while opening input file")
-        print(e)
+    
+    subprocess.check_output(["rm", tempFilePng])
 
     aspect_ratio = width / height
     desired_aspect_ratio = 600.0 / 448.0

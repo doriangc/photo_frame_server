@@ -1,9 +1,10 @@
 import fs, { promises as fsProm } from 'fs';
-import net from 'net';
-import _ from 'lodash';
-import { getNewImage } from './images';
-import { dateDiffInMs } from './tools';
+
 import { Int64BE } from "int64-buffer";
+import _ from 'lodash';
+import { dateDiffInMs } from './tools';
+import { getNewImage } from './images';
+import net from 'net';
 
 const PORT = 9383;
 const HOST = "0.0.0.0";
@@ -27,15 +28,16 @@ const onClientConnected = (sock: any) => {
 
             console.log(tomorrow, "--", now);
 
-            // Sleep in nanoseconds
+            // Sleep in milliseconds
             let sleep = dateDiffInMs(tomorrow, now);
             console.log(`Sleep for ${sleep} milliseconds`);
+            sleep = 20*1000;
 
             // Force to 64 bits
-            var sleepNs = new Int64BE(sleep * 1000 * 1000);
-            console.log(`Sleep for ${sleepNs.toString()} nanoseconds`);
+            var sleepUs = new Int64BE(sleep * 1000);
+            console.log(`Sleep for ${sleepUs.toString()} microseconds`);
 
-            const outData = sleepNs.toBuffer();
+            const outData = sleepUs.toBuffer();
 
             console.log(outData);
 
@@ -60,6 +62,6 @@ const onClientConnected = (sock: any) => {
     const server = net.createServer(onClientConnected);
 
     server.listen(PORT, HOST, function () {
-        console.log(`Server listening on ${server.address()}`);
+        console.log(`Server listening on ${JSON.stringify(server.address())}`);
     });
 })();
