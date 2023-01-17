@@ -72,17 +72,17 @@ const getNewImage = async (): Promise<Buffer> => {
             continue;
         }
 
-        if (image.recently_accessed) {
-            tooRecent.push(image);
-            console.log("Skipping because photo shown recently");
-            continue;
-        }
-
         // If higher priority than all current pics, then clear everything else
         if (image.priority > priority) {
             console.log("Clearing all due to higher priority")
             candidates = [];
             priority = image.priority;
+        }
+
+        if (image.recently_accessed) {
+            tooRecent.push(image);
+            console.log("Skipping because photo shown recently");
+            continue;
         }
 
 
